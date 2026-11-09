@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home repair explorer</title>
+<style>
+/* Layout: a title, then a clickable cutaway house on the left and an info panel on the right. Plain system fonts, single light theme. */
+:root{
+  --paper:#f6f1e7; --card:#fffdf8; --ink:#2b2622; --mute:#6e645a; --line:#e6dccb;
+  --navy:#1f3a5f; --brick:#b5533c; --gold:#e0a030; --sage:#4f8f58;
+  --serif:Arial,Helvetica,sans-serif;
+  --sans:Arial,Helvetica,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55}
+body{padding:30px 18px 48px}
+.wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+h1{font-weight:700;font-size:30px;line-height:1.15;margin:0}
+.lede{margin:8px 0 0;max-width:68ch;color:var(--mute);font-size:16px}
+h2.sec{font-size:22px;margin:0 0 4px}
+.sub{margin:0 0 14px;color:var(--mute);max-width:66ch}
+.bar{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px 18px}
+.bar .row1{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+.bar .lab{font-size:14px;color:var(--mute);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:14px;background:#fff;color:var(--ink);border:1px solid #d6c9b3;border-radius:6px;padding:5px 14px;cursor:pointer}
+.chip:hover{border-color:var(--navy)}
+.chip[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#2b1d05;font-weight:700}
+.btn{font:inherit;font-weight:500;font-size:14.5px;background:#fff;color:var(--ink);border:1px solid #d6c9b3;border-radius:6px;padding:7px 18px;cursor:pointer}
+.btn:hover{border-color:var(--navy)}
+.btn.pri{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn:disabled{opacity:.4;cursor:default}
+.chip:focus-visible,.btn:focus-visible,.vbtn:focus-visible,.acc button:focus-visible,.part:focus-visible,summary:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.main{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:22px;align-items:start}
+.stagecol{position:sticky;top:14px;display:flex;flex-direction:column;gap:8px}
+.stage{position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--line);background:#dcedf3}
+.stage svg{display:block;width:100%;height:auto}
+.vseg{position:absolute;top:12px;right:12px;z-index:6;display:inline-flex;background:rgba(255,253,248,.95);border-radius:6px;padding:3px;}
+.vbtn{background:transparent;color:var(--mute);border:0;padding:6px 16px;border-radius:6px;font:inherit;font-weight:500;font-size:14px;cursor:pointer}
+.vbtn[aria-pressed="true"]{background:var(--navy);color:#fff}
+.tip{position:absolute;pointer-events:none;z-index:7;background:var(--ink);color:#fbf4e6;border-radius:6px;padding:8px 12px;font-size:13px;opacity:0;transform:translate(14px,14px);transition:opacity .1s;min-width:190px}
+.tip.on{opacity:1}
+.tip b{display:block;font-size:14.5px;margin-bottom:3px}
+.tip .tr{display:grid;grid-template-columns:1fr auto auto;gap:2px 14px;font-variant-numeric:tabular-nums}
+.tip .tr span:nth-child(n+2){text-align:right;color:#ffd37a;font-weight:700}
+.tip .th{font-size:10.5px;color:#cbbfa9!important;font-weight:500!important}
+.tip small{display:block;margin-top:5px;color:#cbbfa9;font-size:11.5px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:var(--mute);padding:0 4px}
+.legend i{display:inline-block;width:20px;height:11px;border-radius:6px;margin-right:6px;vertical-align:-2px}
+.legend .g{border:3px solid var(--gold)} .legend .tier{border-radius:50%;width:11px;height:11px;vertical-align:-1px} .legend .h{background:#a9c3dd;border:2px solid var(--navy)}
+.side{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px 20px;}
+.card.gold{background:#fff}
+.eyebrow{font-size:13px;color:var(--mute);font-weight:700}
+.card h3{margin:2px 0 6px;font-size:22px;line-height:1.2}
+.card p{margin:0 0 8px}
+.culprits{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center;font-size:13px;color:var(--mute)}
+.tipline{display:grid;gap:2px;margin:10px 0 0;padding:10px 12px;background:#f8f2e6;border-radius:6px;font-size:14px;font-variant-numeric:tabular-nums}
+.tipline div{display:flex;justify-content:space-between;gap:12px}
+.tipline b{color:var(--brick)}
+.acc{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.item{border:1px solid var(--line);border-radius:6px;background:#fff;overflow:hidden}
+.item.open{border-color:#cdbfa6;}
+.item>button{width:100%;display:grid;grid-template-columns:14px 1fr auto 16px;gap:10px;align-items:center;text-align:left;font:inherit;background:none;border:0;padding:10px 12px;cursor:pointer;color:var(--ink)}
+.item>button:hover{background:#faf5ea}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--c)}
+.item .nm{font-weight:500;font-size:15px}
+.item .rg{font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums;white-space:nowrap}
+.item .car{font-size:12px;color:var(--mute);transition:transform .15s}
+.item.open .car{transform:rotate(90deg)}
+.body{padding:2px 14px 14px;display:grid;gap:10px;font-size:15px}
+.body h4{margin:0 0 1px;font-size:14px;color:var(--ink);font-weight:700}
+.body p{margin:0}
+.costs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.costbox{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fbf8f0}
+.costbox small{display:block;color:var(--mute);font-size:12px}
+.costbox strong{font-family:var(--serif);font-size:20px;color:var(--brick);font-variant-numeric:tabular-nums;}
+.costbox .btn{margin-top:6px;padding:4px 12px;font-size:13px}
+.costbox .btn[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.badge{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--ink)}
+.badge .dot{width:11px;height:11px}
+.who{font-size:13.5px;color:var(--mute)}
+.q{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14.5px}
+.q li{display:grid;grid-template-columns:12px 1fr auto auto;gap:10px;align-items:center;padding:8px 12px;background:#f8f2e6;border-radius:6px;font-variant-numeric:tabular-nums}
+.q li em{font-style:normal;color:var(--mute);font-size:12.5px}
+.q button{background:none;border:0;color:var(--mute);cursor:pointer;font:inherit;font-size:18px;line-height:1;padding:0 4px}
+.q button:hover{color:var(--brick)}
+.total{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;color:var(--mute)}
+.total strong{font-family:var(--serif);font-size:30px;color:var(--ink);font-variant-numeric:tabular-nums;}
+.empty{color:var(--mute);margin:8px 0 0;font-size:14.5px}
+.tourcard .steps{font-size:12.5px;color:var(--mute);margin-bottom:2px}
+.tourcard .nav{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.person{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+.person b{display:block;font-family:var(--serif);font-size:17px;margin-bottom:2px}
+.person span{font-size:14px;color:var(--mute)}
+.gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:4px 28px;margin:0}
+.gloss div{padding:8px 0;border-bottom:1px solid var(--line)}
+.gloss dt{font-weight:700;font-size:15px}
+.gloss dd{margin:0;font-size:14.5px;color:var(--mute)}
+footer{font-size:13.5px;color:var(--mute);border-top:1px solid var(--line);padding-top:14px;max-width:96ch}
+/* house */
+.part{cursor:pointer;outline:none;transition:filter .15s}
+.part .s{stroke:#4a3a30;stroke-width:1.5;stroke-linejoin:round}
+.part:hover,.part.focus{filter:brightness(1.07) drop-shadow(0 3px 7px rgba(31,58,95,.38))}
+.part:hover .s,.part.focus .s{stroke:var(--navy);stroke-width:3;stroke-dasharray:none}
+.part.marked .s{stroke:var(--navy);stroke-width:3;stroke-dasharray:7 4}
+.part.hint{filter:drop-shadow(0 0 6px rgba(224,160,48,.95))}
+.part.hint .s{stroke:var(--gold);stroke-width:4;stroke-dasharray:none}
+.part.hint:hover .s,.part.hint.focus .s{stroke:var(--navy);stroke-width:3}
+.part:focus-visible .s{stroke:var(--navy);stroke-width:4}
+.part .d{fill:none;stroke:#f5ebd6;stroke-width:2;pointer-events:none}
+.part .dk{fill:none;stroke:#6d7983;stroke-width:1.4;pointer-events:none}
+.part .pipe{fill:none;stroke:#c47a3d;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.part .gpipe{fill:none;stroke:#d9a520;stroke-width:4;stroke-linecap:round}
+.part .under{fill:none;stroke:transparent;stroke-width:10;stroke-linecap:round;stroke-linejoin:round}
+.part.focus .under,.part.marked .under{stroke:var(--navy)}
+.part.hint .under{stroke:var(--gold)}
+.part .hit{fill:none;stroke:transparent;stroke-width:16;stroke-linecap:round;stroke-linejoin:round}
+.f-brick{fill:url(#brick)} .f-brick2{fill:url(#brick2)} .f-slate{fill:url(#slate)} .f-glass{fill:url(#glass)} .f-stone{fill:url(#stone)}
+.f-trim{fill:#f5ebd6} .f-door{fill:#2f6f73} .f-wood{fill:#d9b68a} .f-metal{fill:#cdd5db} .f-foot{fill:#b3a893} .f-grass{fill:#7fb069}
+.f-bath{fill:#d4ebe8} .f-tile{fill:#b4dadd} .f-kit{fill:#f9e9bd} .f-din{fill:#f6e1cf} .f-liv{fill:#eadcc9} .f-bed{fill:#e8e2ef} .f-hall{fill:#f4ecdd} .f-base{fill:#d7c9b1} .f-attic{fill:#ead9bd} .f-insul{fill:#f3b9c6}
+.f-cab{fill:#a97a52} .f-counter{fill:#d9d4c9} .f-white{fill:#f8fafb} .f-stair{fill:#c79a68} .f-furn{fill:#8fa1b0} .f-panel{fill:#b3bcc4} .f-green1{fill:#6aa36a} .f-green2{fill:#5d9660} .f-green3{fill:#74ad72}
+.f-conc{fill:#e6e0d4} .f-floor{fill:#d9b68a} .f-sofa{fill:#7d8fa6} .f-sofa2{fill:#8fa1b8} .f-bed1{fill:#e9eef6} .f-rug{fill:#c8a07a}
+.rail{fill:none;stroke:#6b4a2f;stroke-width:3;stroke-linecap:round;pointer-events:none}
+.dec{pointer-events:none}
+.lbl{font-family:var(--sans);font-size:10px;font-weight:700;fill:#7a6a58;pointer-events:none}
+.stage svg[data-view="ext"] .int{display:none}
+.stage svg[data-view="int"] .ext{display:none}
+@media (max-width:980px){
+  .main{grid-template-columns:1fr}
+  .stagecol{position:static}
+  }
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+  <header>
+    <h1>Home repair explorer</h1>
+    <p class="lede">Hover over a part of the house to see typical repair and replacement costs. Click it to read what it does, what goes wrong and who fixes it. Use the outside and inside buttons to switch views.</p>
+  </header>
+
+  <section aria-labelledby="explore-h">
+    <h2 class="sec" id="explore-h">Explore the house</h2>
+    <div class="bar">
+      <div class="row1">
+        <span class="lab">Start from something you have noticed</span>
+        <button class="btn pri" id="tourBtn" type="button">Take the house tour</button>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="main" style="margin-top:18px">
+      <div class="stagecol">
+        <div class="stage" id="stage">
+          <div class="vseg" role="group" aria-label="View"><button class="vbtn" id="v-ext" type="button" aria-pressed="true">Outside</button><button class="vbtn" id="v-int" type="button" aria-pressed="false">Inside</button></div>
+          <svg id="house" data-view="ext" viewBox="0 0 760 580" role="group" aria-label="Cutaway house with an outside view and an inside view. Each part is a button that opens details about it.">
+          <defs>
+            <pattern id="brick" width="24" height="12" patternUnits="userSpaceOnUse"><rect width="24" height="12" fill="#b9553d"/><path d="M0 .75H24M0 6.75H24M6 .75V6.75M18 6.75V12.75" stroke="#ecd6c3" stroke-width="1.6" fill="none"/></pattern>
+            <pattern id="brick2" width="24" height="12" patternUnits="userSpaceOnUse"><rect width="24" height="12" fill="#a24832"/><path d="M0 .75H24M0 6.75H24M6 .75V6.75M18 6.75V12.75" stroke="#e5ccb8" stroke-width="1.6" fill="none"/></pattern>
+            <pattern id="slate" width="16" height="10" patternUnits="userSpaceOnUse"><rect width="16" height="10" fill="#4a586c"/><path d="M0 .5H16M0 5.5H16M8 .5V5.5M0 5.5V10.5M16 5.5V10.5" stroke="#2f3a49" stroke-width="1.2" fill="none"/></pattern>
+            <pattern id="stone" width="30" height="14" patternUnits="userSpaceOnUse"><rect width="30" height="14" fill="#d2c6b0"/><path d="M0 .5H30M0 7.5H30M10 .5V7.5M24 7.5V14.5" stroke="#a99d86" stroke-width="1.2" fill="none"/></pattern>
+            <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d6eef7"/><stop offset="1" stop-color="#8fc0d6"/></linearGradient>
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe0ee"/><stop offset="1" stop-color="#f7f0df"/></linearGradient>
+          </defs>
+
+          <!-- backdrop -->
+          <rect width="760" height="420" fill="url(#sky)"/>
+          <circle cx="68" cy="62" r="40" fill="#f8d870" opacity=".25"/><circle cx="68" cy="62" r="24" fill="#f8d870"/>
+          <g fill="#fff" opacity=".92"><ellipse cx="640" cy="70" rx="42" ry="13"/><ellipse cx="664" cy="60" rx="26" ry="11"/><ellipse cx="210" cy="40" rx="34" ry="10"/></g>
+          <rect y="420" width="760" height="160" fill="#9a7552"/>
+          <g fill="#85603f" opacity=".6"><circle cx="46" cy="520" r="5"/><circle cx="700" cy="500" r="6"/><circle cx="90" cy="560" r="4"/><circle cx="660" cy="552" r="4"/><circle cx="30" cy="470" r="4"/></g>
+
+          <!-- property and grounds -->
+          <g class="part" data-zone="grounds" tabindex="0" role="button">
+            <rect class="s f-grass" x="-4" y="420" width="122" height="12"/>
+            <rect class="s f-grass" x="602" y="420" width="166" height="12"/>
+            <rect class="s f-conc" x="-4" y="411" width="104" height="9"/>
+            <rect class="s f-conc" x="676" y="412" width="90" height="8"/>
+            <rect x="716" y="340" width="12" height="80" fill="#7a5a3c" stroke="#4a3a30" stroke-width="1.5"/>
+            <circle class="s f-green1" cx="722" cy="324" r="34"/><circle class="s f-green2" cx="698" cy="346" r="24"/><circle class="s f-green3" cx="746" cy="346" r="24"/>
+          </g>
+
+          <!-- basement room -->
+          <g class="part" data-zone="basement" tabindex="0" role="button">
+            <rect class="s f-base" x="142" y="420" width="436" height="114"/>
+          </g>
+          <g class="part" data-zone="foundation" tabindex="0" role="button">
+            <rect class="s f-stone" x="130" y="420" width="12" height="126"/>
+            <rect class="s f-stone" x="578" y="420" width="12" height="126"/>
+            <rect class="s f-stone" x="130" y="534" width="460" height="12"/>
+            <rect class="s f-foot" x="118" y="546" width="484" height="12"/>
+          </g>
+
+          <!-- EXTERIOR -->
+          <g class="part ext" data-zone="siding" tabindex="0" role="button"><path class="s f-brick" d="M130 188 L360 84 L590 188 V420 H130 Z"/></g>
+          <g class="part ext" data-zone="chimney" tabindex="0" role="button">
+            <rect class="s f-brick2" x="480" y="72" width="30" height="80"/>
+            <rect class="s f-trim" x="474" y="64" width="42" height="10"/>
+          </g>
+          <g class="part ext" data-zone="roof" tabindex="0" role="button"><path class="s f-slate" d="M104 192 L360 56 L616 192 L590 192 L360 84 L130 192 Z"/></g>
+          <g class="part ext" data-zone="roofline" tabindex="0" role="button">
+            <rect class="s f-metal" x="100" y="190" width="520" height="8" rx="3"/>
+            <rect class="s f-metal" x="604" y="198" width="8" height="222"/>
+            <rect class="s f-trim" x="100" y="184" width="8" height="18"/><rect class="s f-trim" x="612" y="184" width="8" height="18"/>
+            <rect class="s f-trim" x="108" y="198" width="22" height="5"/><rect class="s f-trim" x="590" y="198" width="22" height="5"/>
+          </g>
+          <g class="part ext" data-zone="windows" tabindex="0" role="button">
+            <rect class="s f-glass" x="186" y="214" width="56" height="56"/><rect class="s f-glass" x="332" y="214" width="56" height="56"/><rect class="s f-glass" x="478" y="214" width="56" height="56"/>
+            <rect class="s f-glass" x="186" y="326" width="56" height="60"/><rect class="s f-glass" x="478" y="326" width="56" height="60"/>
+            <circle class="s f-glass" cx="360" cy="130" r="15"/>
+            <path class="d" d="M214 214V270M186 242H242M360 214V270M332 242H388M506 214V270M478 242H534M214 326V386M186 356H242M506 326V386M478 356H534M360 115V145M345 130H375"/>
+          </g>
+          <g class="part ext" data-zone="door" tabindex="0" role="button">
+            <rect class="s f-door" x="338" y="342" width="44" height="70"/>
+            <rect x="346" y="350" width="28" height="20" fill="none" stroke="#fff" stroke-width="1.4" pointer-events="none"/>
+            <circle cx="374" cy="382" r="2.6" fill="#f2c15a" pointer-events="none"/>
+          </g>
+          <g class="part ext" data-zone="porch" tabindex="0" role="button">
+            <path class="s f-slate" d="M296 336 L360 308 L424 336 Z"/>
+            <rect class="s f-trim" x="302" y="336" width="7" height="76"/><rect class="s f-trim" x="411" y="336" width="7" height="76"/>
+            <rect class="s f-wood" x="294" y="412" width="132" height="8"/>
+          </g>
+
+          <!-- INTERIOR -->
+          <g class="int dec">
+            <path d="M104 192 L360 56 L616 192 L590 192 L360 84 L130 192 Z" fill="url(#slate)" stroke="#4a3a30" stroke-width="1.5" stroke-linejoin="round"/>
+            <rect x="130" y="188" width="12" height="232" fill="url(#brick)" stroke="#4a3a30" stroke-width="1.5"/>
+            <rect x="578" y="188" width="12" height="232" fill="url(#brick)" stroke="#4a3a30" stroke-width="1.5"/>
+          </g>
+          <g class="part int" data-zone="attic" tabindex="0" role="button">
+            <path class="s f-attic" d="M142 176 L360 94 L578 176 Z"/>
+            <path class="dk" d="M360 94V176M251 135V176M469 135V176M142 176L360 120L578 176" style="stroke:#bda786"/>
+            <path class="s f-insul" d="M142 162 Q160 154 178 162 T214 162 T250 162 T286 162 T322 162 T358 162 T394 162 T430 162 T466 162 T502 162 T538 162 T574 162 V176 H142 Z"/>
+          </g>
+          <g class="int dec"><g stroke="#4a3a30" stroke-width="1.3" fill="#d9b68a"><rect x="142" y="176" width="436" height="14"/><rect x="142" y="290" width="436" height="14"/><rect x="142" y="406" width="436" height="14"/></g>
+            <path d="M190 176V190M250 176V190M310 176V190M370 176V190M430 176V190M490 176V190M190 290V304M250 290V304M310 290V304M370 290V304M430 290V304M190 406V420M250 406V420M310 406V420M370 406V420M430 406V420" stroke="#a07b4f" stroke-width="1"/></g>
+
+          <g class="part int" data-zone="bathroom" tabindex="0" role="button">
+            <rect class="s f-bath" x="142" y="190" width="108" height="100"/>
+            <rect class="s f-tile" x="142" y="248" width="108" height="42"/>
+            <path class="dk" d="M142 262H250M142 276H250M170 248V290M198 248V290M226 248V290" style="stroke:#93c3c8"/>
+            <rect class="s f-white" x="148" y="266" width="64" height="24" rx="8"/><path class="dk" d="M158 266V248H170" stroke="#8a96a0" stroke-width="3"/>
+            <rect class="s f-white" x="222" y="258" width="14" height="14" rx="2"/><path class="s f-white" d="M216 272H242V280Q242 290 230 290H224Q216 290 216 282Z"/>
+            <rect class="s f-metal" x="180" y="190" width="22" height="6"/>
+          </g>
+          <g class="part int" data-zone="bedroom" tabindex="0" role="button">
+            <rect class="s f-bed" x="250" y="190" width="220" height="100"/>
+            <rect class="s f-bed1" x="276" y="262" width="100" height="22"/><rect class="s f-cab" x="272" y="246" width="8" height="44"/><rect class="s f-white" x="276" y="254" width="26" height="8" rx="3"/>
+            <rect class="s f-cab" x="384" y="268" width="20" height="22"/>
+            <rect class="s f-wood" x="418" y="214" width="46" height="76"/><path class="dk" d="M441 214V290" stroke="#8a6a44"/>
+            <rect class="s f-glass" x="300" y="208" width="46" height="34"/><path class="d" d="M323 208V242M300 225H346"/>
+          </g>
+          <g class="part int" data-zone="kitchen" tabindex="0" role="button">
+            <rect class="s f-kit" x="142" y="304" width="108" height="102"/>
+            <rect class="s f-cab" x="150" y="324" width="56" height="30"/><rect class="s f-cab" x="150" y="372" width="56" height="34"/><rect class="s f-counter" x="148" y="366" width="60" height="7"/>
+            <path class="dk" d="M178 324V354M164 372V406M192 372V406" style="stroke:#7b5a3a"/>
+            <rect class="s f-white" x="212" y="334" width="30" height="72" rx="2"/><path class="dk" d="M212 362H242" stroke="#8a96a0"/>
+            <path class="dk" d="M188 366V352H180" stroke="#8a96a0" stroke-width="2.4"/>
+          </g>
+          <g class="part int" data-zone="dining" tabindex="0" role="button">
+            <rect class="s f-din" x="250" y="304" width="110" height="102"/>
+            <rect class="s f-cab" x="270" y="372" width="66" height="7"/><path class="dk" d="M278 379V406M328 379V406" style="stroke:#7b5a3a"/>
+            <rect class="s f-cab" x="262" y="378" width="8" height="28"/><rect class="s f-cab" x="338" y="378" width="8" height="28"/>
+            <path class="dk" d="M303 304V334" style="stroke:#7b5a3a"/><path class="s f-trim" d="M290 334H316L310 344H296Z"/>
+            <rect class="s f-cab" x="340" y="326" width="18" height="80"/>
+          </g>
+          <g class="part int" data-zone="living" tabindex="0" role="button">
+            <rect class="s f-liv" x="360" y="304" width="110" height="102"/>
+            <rect class="s f-sofa" x="372" y="370" width="62" height="36" rx="7"/><rect class="s f-sofa2" x="366" y="380" width="14" height="26" rx="4"/><rect class="s f-sofa2" x="426" y="380" width="14" height="26" rx="4"/>
+            <rect x="384" y="326" width="38" height="26" fill="#cfd8c0" stroke="#6b4a2f" stroke-width="2"/>
+            <path class="dk" d="M452 406V352" stroke="#7b5a3a"/><circle class="s f-trim" cx="452" cy="346" r="8"/>
+          </g>
+          <g class="part int" data-zone="stairs" tabindex="0" role="button">
+            <rect class="s f-hall" x="470" y="190" width="108" height="100"/>
+            <rect class="s f-hall" x="470" y="304" width="108" height="102"/>
+            <path class="s f-stair" d="M490 406V391.5H500V377H510V362.5H520V348H530V333.5H540V319H550V304.5H560V290H570V406Z"/>
+            <path class="s f-stair" d="M480 420H489V434H498V448H507V462H516V476H525V490H534V504H543V518H552V532H480Z"/>
+            <path class="rail" d="M490 364L570 262M490 364V406M500 351V377M520 326V348M540 301V319M560 275V290M489 418L552 502M489 418V434M552 502V518"/>
+          </g>
+          <g class="int dec">
+            <text class="lbl" x="150" y="204">Bathroom</text><text class="lbl" x="258" y="204">Bedroom</text><text class="lbl" x="150" y="318">Kitchen</text><text class="lbl" x="258" y="318">Dining room</text><text class="lbl" x="368" y="318">Living room</text><text class="lbl" x="478" y="204">Stairs</text><text class="lbl" x="150" y="170" style="font-size:10px">Attic</text><text class="lbl" x="412" y="438">Basement</text>
+          </g>
+
+          <!-- SYSTEMS (both views) -->
+          <g class="part" data-zone="ducts" tabindex="0" role="button">
+            <rect class="s f-metal" x="204" y="424" width="196" height="10"/><rect class="s f-metal" x="330" y="404" width="10" height="20"/>
+          </g>
+          <g class="part" data-zone="gas" tabindex="0" role="button">
+            <path class="hit" d="M118 444H248M190 444V466M248 444V458"/>
+            <path class="gpipe" d="M118 444H248M190 444V466M248 444V458"/>
+            <rect class="s f-trim" x="104" y="380" width="22" height="30" rx="3"/><circle cx="115" cy="395" r="5" fill="#d9a520" stroke="#4a3a30" stroke-width="1.2" pointer-events="none"/><path class="gpipe" d="M115 410V444"/>
+          </g>
+          <g class="part" data-zone="plumbing" tabindex="0" role="button">
+            <path class="hit" d="M118 474H222M400 528H118"/>
+            <path class="under" d="M118 474H222M400 528H118"/>
+            <path class="pipe" d="M118 474H222"/>
+            <path class="pipe" d="M400 528H118M300 528V510" style="stroke-width:6;stroke:#6b6f73"/>
+            <rect class="s f-metal" x="294" y="504" width="12" height="6"/>
+            <path class="pipe int" d="M246 458V192"/>
+          </g>
+          <g class="part" data-zone="waterheater" tabindex="0" role="button">
+            <rect class="s f-white" x="222" y="458" width="34" height="62" rx="12"/><path class="dk" d="M222 486H256" stroke="#5b8fc0" stroke-width="3"/>
+          </g>
+          <g class="part" data-zone="furnace" tabindex="0" role="button">
+            <rect class="s f-metal" x="170" y="424" width="8" height="40"/>
+            <rect class="s f-furn" x="150" y="464" width="56" height="56" rx="3"/>
+            <path class="dk" d="M158 476H198M158 486H198"/><rect x="160" y="498" width="22" height="12" rx="2" fill="#f4a259" pointer-events="none"/>
+          </g>
+          <g class="part" data-zone="laundry" tabindex="0" role="button">
+            <rect class="s f-white" x="272" y="480" width="36" height="40" rx="2"/><circle class="s f-glass" cx="290" cy="502" r="10"/>
+            <rect class="s f-white" x="310" y="480" width="36" height="40" rx="2"/><circle class="s f-glass" cx="328" cy="502" r="10"/>
+          </g>
+          <g class="part" data-zone="panel" tabindex="0" role="button">
+            <rect class="s f-panel" x="396" y="448" width="36" height="56" rx="3"/><path class="dk" d="M404 460H424M404 470H424M404 480H424M404 490H424"/><path d="M414 500l-3 -8h4l-2 -7" fill="none" stroke="#e0a030" stroke-width="1.8" pointer-events="none"/>
+            <rect class="s f-white" x="104" y="338" width="22" height="30" rx="3"/><circle cx="115" cy="353" r="6" fill="#fff" stroke="#4a3a30" stroke-width="1.2" pointer-events="none"/><path class="dk" d="M115 338V300"/>
+          </g>
+          <g class="part" data-zone="ac" tabindex="0" role="button">
+            <rect class="s f-metal" x="624" y="386" width="48" height="34" rx="3"/><circle class="s f-white" cx="648" cy="403" r="11"/><path class="dk" d="M648 392V414M637 403H659"/>
+          </g>
+          <g class="part" data-zone="grounds" tabindex="0" role="button">
+            <ellipse class="s f-green2" cx="118" cy="424" rx="22" ry="12"/><ellipse class="s f-green3" cx="606" cy="424" rx="22" ry="12"/>
+          </g>
+        </svg>
+          <div class="tip" id="tip"></div>
+        </div>
+        <div class="legend">
+          <span><i class="h"></i>Selected</span>
+          <span><i class="g"></i>Likely cause or tour stop</span>
+          <span><i class="tier" style="background:#b5533c"></i>Keeps the house dry and running</span>
+          <span><i class="tier" style="background:#d9962b"></i>Keeps people healthy and safe</span>
+          <span><i class="tier" style="background:#4f8f58"></i>Makes the house work for you</span>
+        </div>
+      </div>
+      <div class="side">
+        <div class="card gold" id="guide"></div>
+        <div class="card" id="zonecard"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="who-h">
+    <h2 class="sec" id="who-h">Who fixes what</h2>
+    <div class="people" id="people"></div>
+  </section>
+
+  <footer>
+    Prices are national ranges in US dollars. Ranges starting with a ~ are ballpark figures, and the rest come from published 2026 cost guides (HomeAdvisor, NerdWallet, Liberty Home Guard and others). Costs in older homes and in local markets can run higher, so treat these as a starting point and get written quotes. The three colored groups follow a standard home assessment approach, and an inspector decides which group a particular problem belongs in.
+  </footer>
+</div>
+
+<script>
+
+const comps = {};
+function add(id,name,t,f,r,p,rs,ps,tr,zone,why,x){
+  comps[id] = Object.assign({id,name,t,f,repair:r,replace:p,rs,ps,trades:tr,zone,why:why||""}, x||{});
+}
+// generic rows that repeat in most rooms
+const GEN = {
+  walls:{n:"Walls",t:"C",f:"W",r:[150,1500],p:[2000,10000],rs:"e",ps:"e",tr:["Drywall","Paint"],
+    why:"Plaster or drywall surfaces. Brown stains, bubbling paint or wide, growing cracks usually point to water or movement somewhere else, so find the cause before patching.",
+    warn:"Stains, bubbling paint, loose plaster, wide or growing cracks."},
+  ceiling:{n:"Ceiling",t:"C",f:"W",r:[150,1500],p:[1500,6000],rs:"e",ps:"e",tr:["Drywall","Paint"],
+    why:"A stained or sagging ceiling is usually the first sign of a leak from the roof or a pipe above it. A badly sagging ceiling can fall.",
+    warn:"Brown rings, sagging, bubbling paint, cracks along the seams."},
+  floor:{n:"Floor",t:"C",f:"H",r:[200,1500],p:[1500,6000],rs:"e",ps:"e",tr:["Carpentry"],
+    why:"The walking surface and the structure under it. Soft or sloping spots can mean water has rotted the wood underneath, and uneven boards are a trip hazard.",
+    warn:"Soft or spongy spots, squeaks, cupped or gapped boards, slopes."},
+  doors:{n:"Doors",t:"C",f:"",r:[50,300],p:[200,800],rs:"e",ps:"e",tr:["Carpentry"],
+    why:"Interior doors give privacy and close off rooms. A door that sticks or will not latch can mean the house is shifting or the wood is swelling from moisture.",
+    warn:"Sticking, gaps, loose hinges, broken latches."},
+  windows:{n:"Windows",t:"M",f:"WH",r:[150,600],p:[300,1000],rs:"e",ps:"g",tr:["Carpentry"],
+    why:"Windows let in light while keeping out rain, wind and cold. Rotted frames let water into the wall, and worn seals leak heat.",
+    warn:"Drafts, fogged glass, sticking sashes, soft wood on the frame."},
+  lighting:{n:"Lighting",t:"C",f:"H",r:[75,300],p:[150,600],rs:"e",ps:"e",tr:["Electrical"],
+    why:"Fixtures and switches. Dark rooms and stairs cause falls, and a fixture that flickers or feels hot can signal a wiring problem.",
+    warn:"Flickering, buzzing, hot fixtures, dead switches, burn marks."},
+  electrical:{n:"Electrical",t:"S",f:"HE",r:[100,350],p:[300,1500],rs:"g",ps:"e",tr:["Electrical"],
+    why:"Outlets, switches and wiring in the room. Warm outlets, buzzing or dead outlets can signal wiring trouble, and outlets near water should have shock protection (GFCI).",
+    warn:"Warm or discolored outlets, buzzing, tripping breakers, two-prong outlets."},
+  water:{n:"Water intrusion / moisture",t:"S",f:"WH",r:[300,3000],p:[2000,10000],rs:"e",ps:"e",tr:["Waterproofing","Plumbing","Roofing"],
+    why:"Any sign of water where it does not belong. Moisture feeds mold and rot, and it usually has a source outside the room that has to be found and fixed first.",
+    warn:"Stains, a musty smell, peeling paint, warped floors, visible mold."},
+  pests:{n:"Pests",t:"S",f:"W",r:[150,600],p:[500,3000],rs:"e",ps:"e",tr:["Pest Ctrl"],
+    why:"Mice, roaches, termites and other pests chew wiring, spoil food and spread allergens. They enter through small gaps that need sealing.",
+    warn:"Droppings, gnaw marks, nests, live or dead insects, scratching sounds."},
+  smoke:{n:"Smoke / CO detector",t:"S",f:"HE",r:[20,100],p:[100,400],rs:"e",ps:"e",tr:["Electrical"],
+    why:"Alarms that warn of fire and carbon monoxide (an odorless gas from furnaces and stoves) while you can still get out. Missing or expired alarms are a life-safety issue.",
+    warn:"No unit, dead battery, a unit more than about ten years old, no alarm near bedrooms."}
+};
+function room(prefix, label, zone, keys, over){
+  keys.forEach(k=>{
+    const g = Object.assign({}, GEN[k], (over && over[k]) || {});
+    add(prefix+"."+k, g.n, g.t, g.f, g.r, g.p, g.rs, g.ps, g.tr, zone, g.why, {warn:g.warn, room:label});
+  });
+}
+
+/* ---------- PROPERTY & GROUNDS ---------- */
+add("trees","Trees","C","H",[300,1500],[500,3000],"e","e",["Arborist"],"grounds","Trees near the house can drop limbs on the roof, clog gutters, and send roots into foundations, sewer lines and walks. Dead, leaning or overhanging trees are a safety hazard.",{warn:"Dead branches over the roof, leaning trunks, roots lifting walks or cracking walls."});
+add("landscape","Landscaping & lawn","C","W",[200,1500],[1000,6000],"e","e",["OTHER"],"grounds","Plants and soil that touch the walls hold moisture against the house. Overgrowth also hides damage and gives pests a path inside.",{warn:"Shrubs against siding, soil piled above the foundation, bare spots where water runs."});
+add("grade","Grading / drainage","S","W",[500,4000],[3000,15000],"e","e",["Grading/Drainage"],"grounds","The ground around the house should slope away so rain runs off instead of pooling at the foundation. Poor grading is a common cause of wet basements.",{warn:"Puddles beside the house, soil sloping toward the walls, a wet basement after rain."});
+add("driveway","Driveway","C","H",[300,1500],[1500,8000],"e","g",["Concrete"],"grounds","The parking surface. Cracks let water in, and freezing widens them each winter. Heaved or uneven slabs are a trip hazard.",{warn:"Wide cracks, sunken or lifted slabs, crumbling edges."});
+add("garage","Garage / ADU","C","WH",[300,3000],[8000,40000],"e","e",["Roofing","Carpentry"],"grounds","A detached garage or accessory dwelling unit (ADU) has its own roof, walls and wiring, so it can have all the same problems as the house.",{warn:"Sagging roofline, rotted bottom boards, water inside, damaged wiring."});
+add("sidewalk","Sidewalk","C","H",[200,1500],[1500,5000],"e","e",["Concrete"],"grounds","Walks leading to the house. Lifted or cracked slabs cause trips and falls, and the owner can be responsible for them.",{warn:"Lifted slabs, big cracks, missing pieces, standing water."});
+add("wildlife","Pests / wildlife","S","W",[150,800],[500,4000],"e","e",["Pest Ctrl","Wildlife Ctrl"],"grounds","Rodents, raccoons, squirrels, bats or insects nesting around the house. They chew wiring, tear up insulation and enter through small gaps that need sealing.",{warn:"Droppings, chewed holes at the roofline, nests, noises in the walls or attic."});
+add("obstruct","Other / obstructions","C","H",[100,1000],[500,3000],"e","e",["OTHER"],"grounds","Anything blocking access to the house, the meters or the exits, such as junk piles, fences or overgrown brush. Blocked exits and meters are a safety problem.",{warn:"Piles against walls, blocked gates or paths, stacked items at doors."});
+
+/* ---------- MAIN STRUCTURE 1/2 ---------- */
+add("roof","Roof","M","W",[300,1500],[6000,16000],"g","g",["Roofing"],"roof","",{
+  does:"Sheds rain and snow so the wood and insulation underneath stay dry. Shingles overlap like fish scales, and flashing (thin metal strips) seals the joints around the chimney and vents.",
+  fails:"Water slips under cracked or missing shingles or past worn flashing, soaks the wood and insulation, then drips through the ceiling. The stain you see is often several feet from the real hole, because water runs along the beams first.",
+  early:"A small leak slowly rots wood, ruins insulation and grows mold, all out of sight. Fixing flashing or a few shingles early costs a fraction of replacing a roof.",
+  jobR:"A roofer finds the leak, replaces damaged shingles or reseals flashing, and checks the area around it. A small repair is usually a single visit.",
+  jobP:"Crews strip the old shingles, fix any rotted wood underneath, then lay waterproof underlayment and new shingles. It is noisy, often takes one to a few days, and is usually the biggest single exterior expense.",
+  warn:"Curling or missing shingles, granules (grit) in the gutters, ceiling stains, daylight in the attic."});
+add("fascia","Fascia","S","W",[200,1000],[1000,4000],"e","e",["Roofing","Paint"],"roofline","The long board along the roof edge that the gutters hang from. If it rots, gutters pull away and water and pests get in behind it.",{warn:"Peeling paint, soft or dark wood, gutters pulling away."});
+add("soffit","Soffit","S","W",[150,800],[800,3000],"e","e",["Roofing","Siding"],"roofline","The underside of the roof overhang. Soffits are usually vented so the attic can breathe. Broken ones let in squirrels, birds, wasps and moisture.",{warn:"Holes, sagging panels, nests, peeling paint."});
+add("gutters","Gutters","S","W",[150,500],[1000,3000],"e","e",["Roofing"],"roofline","",{
+  does:"Catch the water that runs off the roof and carry it away from the walls and foundation.",
+  fails:"Clogged or sagging gutters overflow, so water runs down the walls and pools beside the foundation. It rots trim, peels paint and seeps into the basement.",
+  early:"Gutters are cheap to fix compared with the rot and basement dampness they cause when they fail.",
+  jobR:"Clear out debris, reseal leaking seams, and tighten or re-hang sections so water flows toward the downspout.",
+  jobP:"Remove the old runs and hang new gutters and downspouts, sloped slightly so water drains.",
+  warn:"Sagging runs, water spilling over the edge, peeling paint or stains under the eaves."});
+add("downspouts","Downspouts","S","W",[50,300],[150,800],"e","e",["Roofing"],"roofline","The vertical pipes that carry gutter water to the ground. They should end several feet from the house. Ones that dump at the wall soak the foundation.",{warn:"Crushed or detached pipes, water splashing against the wall, stained siding below."});
+add("dsewer","Downspout – sewer connection","S","W",[150,800],[500,2500],"e","e",["Plumbing"],"roofline","Some older homes have downspouts piped straight into the sewer. In heavy rain that can overload the sewer and push water into the basement, and many cities discourage it.",{warn:"Downspouts that disappear into the ground, sewer backups during storms."});
+add("chimney","Chimney(s)","S","WH",[200,3000],[3000,12000],"g","e",["Masonry"],"chimney","",{
+  does:"Carries smoke and exhaust gases from the furnace, water heater or fireplace out of the house.",
+  fails:"Brick and mortar soak up water, and in winter it freezes and expands, cracking them. The concrete cap on top (the crown) cracks and lets rain run down inside. A damaged flue (the exhaust passage) can leak exhaust, including carbon monoxide, into the house.",
+  early:"Water damage inside masonry spreads and gets expensive. A cracked exhaust path is also a safety problem, not only a cosmetic one.",
+  jobR:"A mason patches the crown or replaces crumbling mortar between the bricks (called repointing), working from a ladder or the roof.",
+  jobP:"A mason takes down the damaged section and rebuilds it brick by brick.",
+  warn:"Crumbling mortar, white powder on the bricks, a cracked cap, a chimney that leans."});
+add("chimney.flash","Chimney flashing","M","W",[200,500],[500,1500],"g","e",["Roofing","Masonry"],"chimney","The metal strips that seal the joint where the chimney meets the roof. It is one of the most common places for a roof to leak.",{warn:"Rust, gaps or lifted metal, ceiling stains near the chimney."});
+add("siding.mat","Siding – material","S","W",[300,2500],[8000,25000],"e","e",["Siding","Masonry"],"siding","",{
+  does:"The outer skin of the house. Siding sheds water, and on brick houses the mortar between the bricks keeps rain out.",
+  fails:"Cracked or missing boards and crumbling mortar let rain into the wall. Moisture inside walls can feed mold and attract insects.",
+  early:"Moisture in walls is invisible until it has done real damage, so small gaps are worth sealing early.",
+  jobR:"Crews replace damaged boards or grind out old mortar and pack in fresh (repointing).",
+  jobP:"The old siding comes off, damaged wood underneath is repaired, and new siding goes on.",
+  warn:"Cracked or soft boards, crumbling mortar, gaps, bulges."});
+add("siding.paint","Siding – paint","S","WH",[3000,10000],[5000,15000],"g","e",["Paint"],"siding","Paint seals wood from moisture, and it is the cheapest protection a wood house has. Paint from before 1978 may contain lead, so scraping and sanding need lead-safe methods.",{warn:"Peeling or bubbling paint, bare wood, chalky surfaces."});
+add("foundation","Foundation","S","WH",[500,10000],[15000,40000],"e","e",["Engineer, Structural","Masonry","Waterproofing"],"foundation","",{
+  does:"Holds up the whole house and keeps soil and groundwater out of the basement.",
+  fails:"Soil and water push against the walls. Cracks let moisture in, walls can bow inward, and parts of the house can settle unevenly, which shows up as sticking doors and sloped floors.",
+  early:"Many hairline cracks are harmless, but wide, growing or stair-step cracks can mean movement. A specialist can tell the difference, and fixing drainage early costs far less than structural repair.",
+  jobR:"Specialists seal cracks (often by injecting material), improve drainage around the house, or waterproof basement walls.",
+  jobP:"Structural repair: crews dig beside the foundation to add supports or rebuild sections. It is rare, major and usually involves an engineer.",
+  warn:"Stair-step cracks in brick, bowing basement walls, doors that stick, standing water."});
+
+/* ---------- MAIN STRUCTURE 2/2 ---------- */
+add("porch","Porch","S","H",[500,3000],[5000,20000],"e","e",["Carpentry","Concrete","Paint"],"porch","",{
+  does:"Gives a safe, dry way into the house and shelters the front door from rain.",
+  fails:"Wood that stays wet rots. Steps get soft, posts lean and railings come loose, which is a fall risk. Water can also run back toward the house wall.",
+  early:"Soft steps and loose railings hurt people. Rot that reaches the house structure is much harder to fix.",
+  jobR:"A carpenter replaces rotted boards, posts or steps and re-secures the railings.",
+  jobP:"The old porch is torn off and the supports, floor and roof are rebuilt.",
+  warn:"Soft or springy boards, leaning posts, wobbly railings, steps pulling away from the house."});
+add("entry.door","Entry door","M","W",[100,400],[500,2500],"e","e",["Carpentry"],"door","",{
+  does:"Controls who comes in and seals out wind, rain and cold.",
+  fails:"Warped doors and worn weatherstripping leave gaps for air and water. A rotted frame or threshold (the strip at the bottom) can make a door impossible to lock securely.",
+  early:"Weatherstripping is a cheap fix that stops drafts and water. Once the frame rots, it needs carpentry.",
+  jobR:"Replace the weatherstripping, adjust hinges or lock hardware, or patch the rotted part of the frame.",
+  jobP:"The old door and frame come out, a new pre-hung door goes in, and it is sealed and trimmed.",
+  warn:"Light around the edges, a door that sticks or will not latch, soft wood at the bottom."});
+add("entry.stairs","Entry stairs (exterior)","S","H",[300,2000],[1500,6000],"e","e",["Concrete","Masonry","Ironwork"],"porch","Outside steps and railings. Crumbling or uneven steps and wobbly railings cause falls, especially in ice and snow.",{warn:"Crumbling edges, uneven risers, a loose or missing railing."});
+add("windows","Windows","M","WH",[150,600],[3000,15000],"e","g",["Carpentry"],"windows","",{
+  does:"Let in light while sealing out rain, wind and cold. Two panes with a sealed gap between them hold in heat much better than one.",
+  fails:"Wood frames rot and let water into the wall. Worn seals leak cold air. Foggy glass means the seal between the panes has failed. Old sashes (the parts that slide) stick or will not stay open.",
+  early:"Water around a window soaks into the wall framing and rots it, and drafts make the furnace work harder all winter. In homes built before 1978, old paint on window frames can contain lead, and opening and closing windows can create lead dust.",
+  jobR:"A carpenter replaces cracked glazing (the putty or seal that holds the glass), adds weatherstripping, or swaps one worn sash. The window stays in the wall.",
+  jobP:"The installer measures, removes the old window, fits a new one, seals around it and trims the edges. Several windows can often be done in a day. Costs here are for the whole house, about $300–$1,000 per window.",
+  warn:"Drafts, fogged glass, sticking sashes, soft or rotted wood on the frame."});
+add("egress","Emergency egress","S","HE",[100,600],[800,5000],"e","e",["Carpentry","OTHER"],"windows","Every sleeping room (and any finished basement) needs a way out besides the main door, such as a window big enough to climb through. Painted-shut or blocked windows can trap people in a fire.",{warn:"Windows painted shut, security bars without a quick release, small or blocked openings, furniture in the way."});
+
+/* ---------- SYSTEMS – UTILITIES ---------- */
+add("elec.sys","Electrical system","M","HE",[100,350],[8000,15000],"g","g",["Electrical"],"panel","The wiring inside the walls plus the outlets and switches that carry power to every room. Old or overloaded wiring runs hot and can start fires, and many older homes have wiring that was never meant for today's appliances. The replace figure is a whole-home rewire.",{warn:"Flickering lights, warm or buzzing outlets, breakers that trip often, two-prong outlets, cloth-covered wires."});
+add("elec.panel","Electric panel","M","HE",[150,500],[1500,4000],"e","g",["Electrical"],"panel","",{
+  does:"The breaker panel (or an older fuse box) splits power from the street into circuits and shuts one off if its wires overheat.",
+  fails:"Old or overloaded panels run hot, and fuse boxes get overloaded with modern appliances. Overheated wiring can start a fire.",
+  early:"Electrical trouble is a safety risk, not just an inconvenience, so a flickering light or a warm outlet is worth a call.",
+  jobR:"A licensed electrician replaces a bad breaker or connection. It is not a do-it-yourself job.",
+  jobP:"The electrician installs a new, higher-capacity panel and reconnects each circuit.",
+  warn:"Breakers that trip often, a fuse box, burning smell, scorch marks, a panel that feels warm."});
+add("plumbing","Plumbing system","M","W",[150,800],[4000,15000],"e","e",["Plumbing"],"plumbing","",{
+  does:"Supply pipes bring clean water in, and drain pipes carry waste water out.",
+  fails:"Pipes leak slowly inside walls and under floors, rotting wood and growing mold before anyone notices. Old steel pipes rust from the inside, which causes low pressure and brown water.",
+  early:"A hidden leak runs 24 hours a day. Finding it early saves floors and ceilings, and it stops you paying for wasted water.",
+  jobR:"A plumber finds the leak, then repairs or replaces that section of pipe, the fixture or the valve.",
+  jobP:"The old pipes are replaced with new ones, usually opening some walls and floors along the way.",
+  warn:"Low water pressure, rusty or brown water, slow drains, damp spots or stains on ceilings and walls."});
+add("water.main","Water main","M","W",[200,1000],[1500,5000],"e","e",["Plumbing"],"plumbing","The pipe that brings water from the street into the house, with a main shutoff valve you should be able to find and turn. Older service pipes may be lead, so ask the water utility.",{warn:"Low pressure in the whole house, a valve that will not turn, wet ground over the line, brown water."});
+add("drain","Drain line / cleanout","M","W",[150,600],[3000,10000],"e","e",["Plumbing"],"plumbing","The main drain carries waste water out to the sewer, and the cleanout is a capped pipe that gives plumbers access to clear it. Tree roots and old clay or cast-iron pipes cause backups.",{warn:"Slow drains in several fixtures, gurgling, sewage smells, water backing up in the basement."});
+add("water.heater","Water heater","S","W",[150,600],[1200,3500],"e","e",["Plumbing"],"waterheater","",{
+  does:"Heats and stores a tank of water for showers, dishes and laundry.",
+  fails:"Minerals settle at the bottom and the steel tank slowly rusts from the inside until it leaks. Heating elements and thermostats wear out, so water turns lukewarm.",
+  early:"A tank that fails can release a lot of water into the basement. Replacing an old tank on your own schedule beats an emergency flood.",
+  jobR:"A plumber swaps a failed heating element, thermostat or valve.",
+  jobP:"The old tank is drained and hauled away, and the new one is connected to water, gas or electric, and the vent.",
+  warn:"Rust-colored hot water, rumbling noises, water pooling at the base, lukewarm showers."});
+add("gas","Gas connection","M","HE",[150,600],[500,3000],"e","e",["Gas"],"gas","The gas meter, shutoff valve and pipes that feed the furnace, water heater and stove. A gas leak can cause fires and explosions. If you smell rotten eggs, leave the house, then call the gas company from outside.",{warn:"Rotten-egg smell, hissing, rusted pipes or fittings, a dead patch of plants over the line, no shutoff you can find."});
+add("furnace","Furnace / heat","M","HE",[125,500],[4000,8000],"g","g",["HVAC"],"furnace","",{
+  does:"Burns gas (or uses electricity) to warm air, then blows it through ducts into every room.",
+  fails:"Worn parts make it shut off, cycle on and off, or run loudly. A cracked heat exchanger (the metal chamber that keeps burning gases apart from your air) can leak carbon monoxide.",
+  early:"Furnaces tend to fail in the coldest weather. A yearly tune-up catches worn parts, and anything that looks like soot or a yellow flame should be checked right away.",
+  jobR:"A technician finds the failed part, such as the ignitor or blower motor, and replaces it. Often done in one visit.",
+  jobP:"The old unit is disconnected and hauled out, a new one is set in place, and it is connected to gas, power, ducts and the vent pipe. Typically about a day.",
+  warn:"Frequent on-and-off cycling, loud noises, a yellow flame, rising gas bills, uneven heat."});
+add("ac","AC / cooling","C","",[150,650],[3000,8000],"g","e",["HVAC"],"ac","Central air or window units that cool the house. It matters most for older residents, babies and people with heart or breathing problems, who are at risk in extreme heat.",{warn:"Warm air from vents, ice on the unit, loud noises, water leaking inside."});
+add("ducts","Ducts / HVAC condition","S","H",[200,1000],[1500,5000],"e","e",["HVAC"],"ducts","Metal passages that carry warm or cool air to each room. Leaky or disconnected ducts waste heat, and dirty or moldy ducts spread dust and spores.",{warn:"Cold rooms, loose or crushed ducts, dust blowing from vents, a musty smell when the heat starts."});
+add("laundry","Laundry","C","W",[100,400],[500,2500],"e","e",["Plumbing","Electrical","Appliances"],"laundry","Washer and dryer hookups. A cracked washer hose can flood a basement, and a clogged dryer vent is a fire risk.",{warn:"Cracked or bulging hoses, a damp floor, lint buildup, a dryer vent that does not go outside."});
+
+/* ---------- BASEMENT ---------- */
+room("base","Basement","basement",["walls","ceiling","floor","doors","windows","lighting","electrical","water","pests","smoke"],{
+  walls:{n:"Interior walls"},
+  floor:{tr:["Concrete"],why:"The basement slab. Cracks and damp patches show where water or moisture is coming through."},
+  windows:{why:"Small basement windows leak around the frame and are a common place for water to get in. In a finished basement they may also need to work as an emergency exit."},
+  water:{why:"Basements are where water shows up first: from outside through cracks and window wells, or from inside through leaking pipes and appliances. Find the source before finishing or painting."}
+});
+add("base.beam","Supports / beam","S","H",[500,3000],[2000,10000],"e","e",["Engineer, Structural","Carpentry"],"basement","The steel or wood beam and posts that hold up the floor above. Rust, rot or a sagging beam can make floors above bounce or slope.",{warn:"A visibly bowed beam, rusted or leaning posts, cracks around a post, floors above that bounce or slope.",room:"Basement"});
+
+/* ---------- KITCHEN ---------- */
+room("kit","Kitchen","kitchen",["walls","ceiling","floor","doors","windows","lighting","electrical","water","pests","smoke"]);
+add("kit.cabinets","Cabinets","C","",[150,1000],[3000,15000],"e","e",["Carpentry"],"kitchen","Storage, and the surface under the sink where leaks hide. Swollen or soft bottoms mean water has been getting in.",{warn:"Swollen or soft bottoms, doors that will not close, stains inside the sink cabinet.",room:"Kitchen"});
+add("kit.counter","Countertop","C","",[100,600],[1500,6000],"e","e",["Carpentry"],"kitchen","The work surface. Cracks and lifting edges near the sink let water seep into the cabinet below.",{warn:"Cracks, lifting edges, soft spots, burns.",room:"Kitchen"});
+add("kit.pantry","Pantry","C","W",[100,500],[500,3000],"e","e",["Carpentry"],"kitchen","Food storage. Pantries attract pests, and shelves that sag or doors that stick make the room hard to use.",{warn:"Sagging shelves, droppings, damaged doors.",room:"Kitchen"});
+add("kit.fridge","Refrigerator","C","",[100,400],[800,2500],"e","e",["Appliances"],"kitchen","Keeps food safe. A failing refrigerator spoils food, and a leaking water line can damage the floor.",{warn:"Warm food, ice buildup, water on the floor, loud humming.",room:"Kitchen"});
+add("kit.stove","Stove / oven","C","H",[100,400],[600,2500],"e","e",["Appliances","Gas"],"kitchen","The cooking appliance. Gas stoves need a working shutoff and good ventilation, and burners that will not light or smell of gas need repair right away.",{warn:"Burners that will not light, a gas smell, a door that will not seal, a yellow flame.",room:"Kitchen"});
+add("kit.vent","Vent fan","C","H",[75,300],[200,800],"e","e",["Electrical"],"kitchen","Pulls steam, grease and cooking fumes outside. Without it, moisture and grease build up, and gas stoves can raise indoor air pollution.",{warn:"A fan that does not move air, loud rattling, grease-coated filters, a vent that does not go outside.",room:"Kitchen"});
+add("kit.sink","Sink","C","W",[100,400],[300,1500],"e","e",["Plumbing"],"kitchen","The kitchen sink and faucet. Drips, slow drains and loose fixtures waste water and slowly rot the cabinet below.",{warn:"Dripping faucet, slow drain, loose sink, stains under the sink.",room:"Kitchen"});
+add("kit.plumbing","Plumbing","S","W",[150,800],[500,3000],"e","e",["Plumbing"],"kitchen","Supply lines and drains under and behind the sink. Small leaks here often run unnoticed for months.",{warn:"Damp or swollen cabinet floor, mildew smell, corroded fittings, low pressure.",room:"Kitchen"});
+
+/* ---------- DINING ---------- */
+room("din","Dining room","dining",["walls","ceiling","floor","doors","windows","lighting","electrical","water","pests","smoke"]);
+add("din.builtins","Built-ins / cabinetry","C","",[100,600],[500,4000],"e","e",["Carpentry"],"dining","Built-in cabinets and shelves. They add storage, and in older homes they are often hard to replace.",{warn:"Loose doors, sagging shelves, water stains, pest droppings.",room:"Dining room"});
+
+/* ---------- ATTIC ---------- */
+room("attic","Attic","attic",["walls","ceiling","floor","doors","windows","lighting","electrical","water","pests","smoke"],{
+  ceiling:{why:"In an attic this is usually the underside of the roof. Dark stains, daylight or damp wood here show where the roof is leaking.",warn:"Dark stains on the roof boards, daylight through the roof, damp or moldy wood."},
+  floor:{why:"The attic floor is also the ceiling of the rooms below. It has to carry insulation and any stored items without sagging.",warn:"Sagging or soft boards, joists with cracks, stains."}
+});
+add("attic.access","Stairwell / access","S","H",[100,600],[500,3000],"e","e",["Carpentry"],"attic","How you get up to the attic: a staircase, ladder or pull-down hatch. Weak or missing access means problems up there go unnoticed.",{warn:"A loose ladder, a hatch that will not close tight, missing railings.",room:"Attic"});
+add("attic.builtins","Built-ins / cabinetry","C","",[100,500],[500,3000],"e","e",["Carpentry"],"attic","Built-in storage under the eaves. Check for pests and moisture behind it.",{warn:"Dampness, droppings, loose doors.",room:"Attic"});
+add("attic.insulation","Insulation","C","H",[300,1500],[1500,5000],"e","e",["Insulation"],"attic","",{
+  room:"Attic",
+  does:"A blanket on the attic floor that keeps heat inside in winter and outside in summer.",
+  fails:"Thin, matted or wet insulation lets warmth leak through the ceiling, so the furnace works harder. In winter that escaping heat can melt snow on the roof, which refreezes at the eaves as ice dams and pushes water under the shingles.",
+  early:"Insulation is one of the cheaper ways to lower heating bills, and it protects the roof from ice dams.",
+  jobR:"A contractor seals gaps where air leaks into the attic, then tops up the insulation to the recommended depth.",
+  jobP:"Old, wet or pest-damaged insulation is removed and new insulation is blown in or laid in across the attic floor.",
+  warn:"Uneven heat between rooms, icicles or ice at the eaves, high heating bills, thin or damp insulation. Loose gray-brown pebbly fill (vermiculite) in older attics can contain asbestos, so do not disturb it and get it tested."});
+
+/* ---------- BATHROOM ---------- */
+room("bath","Bathroom","bathroom",["walls","ceiling","floor","doors","windows","lighting","electrical","water","pests"],{
+  walls:{tr:["Drywall","Tile","Paint"],why:"Bathroom walls take steam and splashes. Cracked grout or caulk lets water get behind the tile, where it rots the wall and grows mold."},
+  floor:{tr:["Carpentry","Tile"],why:"Bathroom floors often hide slow leaks. A soft spot near the toilet or tub usually means water has already rotted the wood underneath."}
+});
+add("bath.cabinets","Cabinets","C","W",[150,1000],[500,3000],"e","e",["Carpentry"],"bathroom","The vanity under the sink. Leaks swell and rot the bottom, and damp cabinets grow mold.",{warn:"Swollen or soft bottoms, doors that will not close, musty smell.",room:"Bathroom"});
+add("bath.counter","Countertop","C","",[100,600],[500,2500],"e","e",["Carpentry"],"bathroom","The vanity top. Cracks and lifting edges near the sink let water into the cabinet below.",{warn:"Cracks, lifting edges, stains.",room:"Bathroom"});
+add("bath.vent","Vent fan","S","W",[75,300],[150,700],"e","e",["Electrical"],"bathroom","Vents steam outside. A weak or missing fan leaves humidity that peels paint and breeds mold, and the vent should lead outdoors, not into the attic.",{warn:"Mirror that stays fogged, peeling paint on the ceiling, a fan that barely moves air, mold spots.",room:"Bathroom"});
+add("bath.toilet","Toilet","S","W",[75,300],[300,900],"e","e",["Plumbing"],"bathroom","A working toilet matters for sanitation. A rocking toilet or leak at its base can rot the floor beneath it.",{warn:"Rocking, water at the base, running water, cracks in the bowl or tank.",room:"Bathroom"});
+add("bath.sink","Sink","C","W",[100,400],[250,1000],"e","e",["Plumbing"],"bathroom","The bathroom sink and faucet. Drips and slow drains waste water and can rot the cabinet below.",{warn:"Dripping faucet, slow drain, loose sink, stains beneath.",room:"Bathroom"});
+add("bath.shower","Shower / bath","S","W",[150,1500],[2500,10000],"e","e",["Plumbing","Tile"],"bathroom","",{
+  room:"Bathroom",
+  does:"The tub and shower, the part of the house that handles the most water: tile, grout, caulk and the drain.",
+  fails:"Cracked caulk and grout let water seep behind the tile and under the tub, where it rots wood and grows mold. A leaking drain or valve can drip into the ceiling or basement below.",
+  early:"Resealing caulk costs very little compared with rebuilding a rotted bathroom floor. Leaks here often show up as a stain on the ceiling below or a soft floor.",
+  jobR:"A handyman or plumber recaulks and regrouts, reglazes a worn tub, or replaces a valve or drain. If wood is rotted, the floor or wall has to be opened up.",
+  jobP:"The tub or shower is removed, rot and plumbing are repaired, and new waterproofing, tile and fixtures go in. It usually takes days.",
+  warn:"Cracked or missing caulk, loose or stained tile, a musty smell, a soft floor around the tub, stains on the ceiling below."});
+add("bath.plumbing","Plumbing","S","W",[150,800],[500,3000],"e","e",["Plumbing"],"bathroom","Supply lines and drains behind the walls and under the floor. Leaks here are often hidden until the damage is large.",{warn:"Low pressure, slow drains, damp walls, stains on the ceiling below.",room:"Bathroom"});
+
+/* ---------- BEDROOM ---------- */
+room("bed","Bedroom","bedroom",["walls","ceiling","floor","doors","windows","lighting","electrical","water","pests","smoke"]);
+add("bed.closet","Closet","C","",[100,500],[300,2000],"e","e",["Carpentry"],"bedroom","Clothes storage. Closets on outside walls can get damp, and shelves and rods that pull loose are a nuisance.",{warn:"Mildew smell, loose shelves, stuck doors, stains on the walls.",room:"Bedroom"});
+
+/* ---------- OTHER ROOM (LIVING ROOM) ---------- */
+room("liv","Living room","living",["walls","ceiling","floor","doors","windows","lighting","electrical","water","pests","smoke"]);
+add("liv.closet","Closet / built-ins","C","",[100,500],[300,3000],"e","e",["Carpentry"],"living","Closets and built-in storage. Check for moisture on outside walls and for loose doors and shelves.",{warn:"Mildew smell, loose shelves, stuck doors.",room:"Living room"});
+
+/* ---------- STAIRS ---------- */
+room("st","Stairs","stairs",["walls","ceiling","lighting","electrical","water","pests","smoke"],{
+  lighting:{t:"S",why:"Dark stairs cause falls. Every flight needs a light you can switch on from the top and the bottom."}
+});
+add("st.handrails","Handrails","S","H",[75,400],[300,1500],"e","e",["Carpentry","Ironwork"],"stairs","The rail you grab when you slip. A loose or missing handrail is one of the most common causes of serious falls on stairs.",{warn:"A rail that wobbles, missing sections, no rail on one side, loose posts.",room:"Stairs"});
+add("st.steps","Steps","S","H",[150,1500],[3000,10000],"e","e",["Carpentry"],"stairs","",{
+  room:"Stairs",
+  does:"Connect the levels of the house and give you something to hold onto along the way.",
+  fails:"Treads loosen and squeak, wood rots where damp reaches it, and railings and balusters (the upright spindles) work loose. A weak step or railing is a fall risk, and stairs to the basement are often steep and dim.",
+  early:"A loose railing or cracked tread is cheap to secure now and a common cause of falls if ignored. Once the stringers (the sloped side beams) rot, the whole flight has to be rebuilt.",
+  jobR:"A carpenter tightens or replaces individual treads, secures the railing posts, and stops squeaks by fastening the treads to the stringers.",
+  jobP:"The old flight comes out and a carpenter builds new stringers, treads and a railing. The work usually has to meet building code.",
+  warn:"Squeaks, bouncy or cracked treads, a railing that wobbles, soft wood at the bottom of the stairs."});
+add("st.treads","Treads","S","H",[100,600],[300,2000],"e","e",["Carpentry"],"stairs","The flat part you step on. Worn, cracked or slippery treads cause falls.",{warn:"Cracks, worn or slick surfaces, loose boards, uneven depth.",room:"Stairs"});
+add("st.risers","Risers","S","H",[100,500],[300,1500],"e","e",["Carpentry"],"stairs","The vertical face between treads. Missing or uneven risers change the step height, which makes people trip.",{warn:"Missing boards, gaps big enough for a foot, uneven heights.",room:"Stairs"});
+
+const SYMPTOMS = {
+  leak:{label:"Leaking ceiling",parts:["roof","chimney.flash","gutters","windows","plumbing","bed.ceiling"],
+    text:"Water can travel along beams and pipes before it drips, so the stain may not be directly under the source. It may help to note whether it leaks only when it rains or snows (possibly the roof, flashing, chimney or gutters) or also in dry weather (possibly plumbing)."},
+  drafts:{label:"Cold drafts or high heating bills",parts:["windows","entry.door","attic.insulation","furnace","siding.mat"],
+    text:"Air may be escaping around windows and doors or through thin attic insulation, which can make the furnace run longer. Drafts can sometimes be felt by holding a hand near window and door edges. If rooms stay cold without drafts, the attic insulation or the furnace may be worth checking."},
+  basement:{label:"Damp, musty basement",parts:["foundation","gutters","downspouts","grade","plumbing","base.water"],
+    text:"Moisture may be coming from outside or from a leaking pipe or tank. Overflowing gutters, poor grading and foundation cracks are common outside sources. It may help to note whether it gets worse after rain."},
+  floors:{label:"Creaky, bouncy or sagging floors",parts:["liv.floor","base.beam","foundation","plumbing"],
+    text:"Squeaks are often loose boards. Soft or sagging spots can sometimes mean water has damaged the wood below, or that a beam or the foundation has shifted. Looking at the area from underneath, if reachable, may help."},
+  bath:{label:"Mold or soft spots near the bathroom",parts:["bath.shower","bath.plumbing","bath.floor","bath.vent","bath.water"],
+    text:"Cracked caulk or grout can let water get behind the tile and under the tub, which over time may damage the floor and allow mold to grow. A toilet that rocks or a musty smell can be early signs."},
+  stairs:{label:"Loose railings or squeaky stairs",parts:["st.handrails","st.treads","st.steps"],
+    text:"Squeaks often come from treads rubbing against their supports. A wobbly railing is a safety concern, since people grab it when they slip. These may be quick fixes if addressed early."},
+  electric:{label:"Flickering lights or tripping breakers",parts:["elec.sys","elec.panel"],
+    text:"Flickering lights or tripping breakers can point to overloaded or failing wiring. Because of the fire risk, a licensed electrician is the usual next step."},
+  nohot:{label:"No hot water or no heat",parts:["water.heater","furnace","gas"],
+    text:"Common causes include a failed heating element, thermostat, ignitor or pilot, or a worn-out unit. If you smell gas, leave the house and call the gas company from outside."},
+  paint:{label:"Peeling paint outside",parts:["siding.paint","gutters","windows","porch"],
+    text:"Paint can peel when moisture gets behind it, for example from an overflowing gutter or a failed window seal. Homes built before 1978 may have lead-based paint, so a lead-safe contractor is recommended."},
+  cracks:{label:"Cracks or sticking doors",parts:["foundation","entry.door","windows","bed.walls","base.beam"],
+    text:"Houses move a little, but cracks that widen or doors that begin to stick can be a sign of settling or moisture. Dated photos can help show whether cracks are growing."}
+};
+const TIERS = {
+  M:{short:"Keeps the house dry and running", color:"#b5533c"},
+  S:{short:"Keeps people healthy and safe", color:"#d9962b"},
+  C:{short:"Makes the house work for you", color:"#4f8f58"}
+};
+const WHO = {
+  "Roofing":"Roofer","Plumbing":"Plumber","Electrical":"Electrician","HVAC":"Heating and cooling technician","Carpentry":"Carpenter",
+  "Masonry":"Mason","Concrete":"Concrete contractor","Drywall":"Drywall or plaster finisher","Paint":"Painter","Insulation":"Insulation installer",
+  "Siding":"Siding installer","Tile":"Tile setter","Waterproofing":"Waterproofing contractor","Engineer, Structural":"Structural engineer",
+  "Gas":"Gas fitter","Ironwork":"Ironworker","Pest Ctrl":"Pest control","Wildlife Ctrl":"Wildlife control","Arborist":"Arborist",
+  "Grading/Drainage":"Drainage contractor","Appliances":"Appliance repair","OTHER":"Handyman"
+};
+const ZONES = {
+  grounds:{label:"The yard and property",view:"both",tip:[["Typical fixes",[200,1500]],["Major work",[1000,8000]]],
+    blurb:"Ground slope affects where rain goes. Tree limbs can fall on the roof, and cracked walks are a trip hazard."},
+  roof:{label:"Roof",comp:"roof",view:"ext",blurb:"The roof keeps rain out. Most other parts of the house depend on it staying watertight."},
+  chimney:{label:"Chimney",comp:"chimney",view:"ext",blurb:"A chimney is a tall stack of brick sitting in the weather, and it also carries exhaust out of your house."},
+  roofline:{label:"Gutters and roofline",comp:"gutters",view:"ext",blurb:"Where the roof ends, a few small parts decide whether rain lands beside your foundation or far away from it."},
+  siding:{label:"Walls: brick, siding and paint",comp:"siding.mat",view:"ext",blurb:"The outside walls protect the frame. Paint, siding and the mortar between bricks all exist to keep water from reaching the wood frame inside."},
+  foundation:{label:"Foundation",comp:"foundation",view:"both",blurb:"Everything the house weighs rests on the foundation, and it also holds back the soil and water around the basement."},
+  porch:{label:"Porch and outside steps",comp:"porch",view:"ext",blurb:"Porches and steps live outdoors in all weather, so wood rots and concrete crumbles, and falls here are common."},
+  door:{label:"Front door",comp:"entry.door",view:"ext",blurb:"The door has two jobs: control who comes in, and seal out the weather."},
+  windows:{label:"Windows",comp:"windows",view:"ext",blurb:"Windows have to stay sealed against weather. They are also emergency exits."},
+  furnace:{label:"Furnace",comp:"furnace",view:"both",blurb:"The furnace heats the house. Without heat in winter, pipes can freeze."},
+  ducts:{label:"Heating ducts",comp:"ducts",view:"both",blurb:"The ducts carry warm air from the furnace to each room."},
+  waterheater:{label:"Water heater",comp:"water.heater",view:"both",blurb:"The water heater is an insulated tank that holds roughly 40 to 50 gallons of hot water. Every tank wears out eventually."},
+  plumbing:{label:"Plumbing",comp:"plumbing",view:"both",blurb:"Plumbing is two systems: pipes that bring clean water in, and pipes that carry waste water out. Both hide inside walls and floors."},
+  panel:{label:"Electrical",comp:"elec.panel",view:"both",blurb:"Electricity arrives at the meter, flows into the breaker panel, and spreads through the walls to every outlet and light. Wiring mistakes can start fires, so this is licensed work."},
+  gas:{label:"Gas connection",comp:"gas",view:"both",blurb:"Natural gas feeds the furnace, water heater and stove. It is safe when the pipes are sound and dangerous when they leak."},
+  laundry:{label:"Laundry",comp:"laundry",view:"both",blurb:"Washers and dryers add water, heat and lint to the house, so hoses and vents deserve a look now and then."},
+  ac:{label:"Air conditioner",comp:"ac",view:"both",blurb:"The outdoor unit of a central air conditioner. Cooling can be a health issue during extreme heat."},
+  basement:{label:"Basement",view:"both",tip:[["Typical fixes",[300,3000]],["Major work",[3000,15000]]],
+    blurb:"Water and settling problems can show up here first. The main utilities are usually here too."},
+  kitchen:{label:"Kitchen",view:"int",tip:[["Typical fixes",[150,1000]],["Full remodel",[10000,40000]]],
+    blurb:"The kitchen has water, heat and electricity. Many repairs involve leaks and wear."},
+  dining:{label:"Dining room",view:"int",tip:[["Typical fixes",[100,1000]],["Major work",[1500,8000]]],
+    blurb:"Problems here are usually walls, ceilings and floors, and may trace back to trouble elsewhere."},
+  living:{label:"Living room",view:"int",tip:[["Typical fixes",[100,1000]],["Major work",[1500,8000]]],
+    blurb:"Cracks, stains and sagging floors are things to look for."},
+  bedroom:{label:"Bedroom",view:"int",tip:[["Typical fixes",[100,1000]],["Major work",[1500,8000]]],
+    blurb:"Bedrooms are where people sleep, so two safety items matter most: working smoke and carbon monoxide alarms, and a window that works as a way out in a fire."},
+  bathroom:{label:"Bathroom",view:"int",tip:[["Typical fixes",[150,1500]],["Full remodel",[8000,25000]]],
+    blurb:"Bathrooms see a lot of water. Small leaks and humidity can lead to rot and mold."},
+  attic:{label:"Attic",view:"int",tip:[["Typical fixes",[300,1500]],["Major work",[1500,5000]]],
+    blurb:"The attic holds the insulation and the underside of the roof. It is a good place to spot leaks early."},
+  stairs:{label:"Stairs",view:"int",tip:[["Typical fixes",[150,1500]],["Rebuild",[3000,10000]]],
+    blurb:"Falls on stairs are common, so loose rails and worn steps are safety repairs."}
+};
+const TOUR = [
+  {title:"Rain starts at the roof",zones:["roof","chimney"],view:"ext",
+   text:"Rain meets the roof first. Overlapping shingles shed the water, and strips of metal called flashing seal the joints around the chimney. If either fails, water can get under the roof and into the wood and insulation."},
+  {title:"Gutters send the water away",zones:["roofline"],view:"ext",
+   text:"Water running off the roof lands in the gutters, flows to the downspouts, and is supposed to be carried well away from the house. When gutters clog or sag, water can spill down the walls and pool beside the foundation."},
+  {title:"Walls and windows keep it out",zones:["siding","windows","door","porch"],view:"ext",
+   text:"The walls, windows and doors form the outer shell. Paint, siding and brick mortar keep water from reaching the wood frame. Windows and doors also need tight seals, because gaps let in both rain and cold air. Wood that stays wet can rot."},
+  {title:"The ground and the foundation",zones:["grounds","foundation"],view:"both",
+   text:"Water that gets past the gutters ends up in the soil next to the house. The ground should slope away from the walls so it drains off. If it does not, water can push against the foundation and find cracks."},
+  {title:"The basement utilities",zones:["furnace","waterheater","plumbing","panel","gas","ducts","laundry"],view:"both",
+   text:"The main utilities are here. The furnace heats, the water heater stores hot water, the electric panel divides power into circuits, and pipes bring water in and take waste out. Problems here can leave a house without heat, water or power."},
+  {title:"Where water works hardest",zones:["bathroom","kitchen"],view:"int",
+   text:"Inside, kitchens and bathrooms use the most water. Tiny leaks around a tub, toilet or sink are easy to miss, but over time they can damage the floor underneath."},
+  {title:"The attic and insulation",zones:["attic"],view:"int",
+   text:"Insulation on the attic floor keeps heat from escaping through the ceiling. It also keeps the roof cold in winter, which helps prevent ice dams, ridges of ice at the roof's edge that can push water under shingles. The attic can also be a good place to spot a leak early."},
+  {title:"Safety items",zones:["stairs","bedroom"],view:"int",
+   text:"Some repairs protect people more than the building. Stairs need solid railings and even steps. Bedrooms need working smoke and carbon monoxide alarms, which warn you about a gas with no smell, and a window that opens wide enough to climb out of in a fire."}
+];
+const GLOSSARY = [
+  ["Balusters","The upright spindles in a stair or porch railing."],
+  ["Breaker panel","The box that divides electricity into separate circuits and shuts one off if its wires overheat. Older houses may have a fuse box instead."],
+  ["Carbon monoxide (CO)","A gas with no smell or color, made when fuel burns. It can poison people, which is why homes need CO alarms."],
+  ["Crown (chimney)","The concrete cap on top of a chimney that sheds rain."],
+  ["Egress","A way out. In a bedroom, a window big enough to climb through in an emergency."],
+  ["Fascia","The long board along the roof's edge that the gutters hang from."],
+  ["Flashing","Thin metal strips that seal the joints where a roof meets a chimney, wall or vent."],
+  ["GFCI outlet","An outlet that cuts the power in a split second if electricity takes the wrong path. It protects you from shock near water."],
+  ["Glazing","The putty or seal that holds glass in a window frame."],
+  ["Grading","The slope of the ground around the house."],
+  ["Heat exchanger","The metal chamber inside a furnace that keeps burning gases apart from the air you breathe."],
+  ["Ice dam","A ridge of ice at the roof's edge that traps melting snow and can push water under shingles."],
+  ["Joists","The horizontal beams under a floor that carry its weight."],
+  ["Repointing","Replacing crumbling mortar between bricks."],
+  ["Sash","The movable part of a window that holds the glass."],
+  ["Soffit","The underside of the roof overhang, often vented so the attic can breathe."],
+  ["Stringers","The sloped side beams that support the steps of a staircase."],
+  ["Subfloor","The structural layer of wood under the finished floor."]
+];
+const PEOPLE = [
+  ["Roofer","Fixes and replaces shingles, flashing and leaks."],
+  ["Plumber","Pipes, drains, toilets, faucets and water heaters."],
+  ["Electrician","Wiring, outlets, panels and alarms. This work must be done by a licensed professional."],
+  ["Heating and cooling technician","Furnaces, air conditioners and ducts."],
+  ["Carpenter","Framing, floors, stairs, doors, windows, porches and railings."],
+  ["Mason","Brick, stone and mortar, including chimneys."],
+  ["Concrete contractor","Walks, steps, driveways and slabs."],
+  ["Painter","Surface prep and painting, including lead-safe work in older homes."],
+  ["Drywall or plaster finisher","Patches and rebuilds walls and ceilings."],
+  ["Insulation installer","Seals air leaks and adds insulation in attics and walls."],
+  ["Waterproofing contractor","Keeps water out of basements and foundations."],
+  ["Structural engineer","Studies whether a building is sound and writes the plan for repairs. Does not do the repair."],
+  ["Pest and wildlife control","Removes pests and animals and seals the gaps they use."],
+  ["Handyman","Small jobs that do not need a specialist."]
+];
+
+let view = "ext", focusZone = "roof", expanded = "roof", symptom = "leak", tour = null;
+const $ = s => document.querySelector(s);
+const fmt = n => "$" + n.toLocaleString("en-US");
+const rg = (c,k) => (c[k==="repair"?"rs":"ps"]==="e" ? "~" : "") + fmt(c[k][0]) + "–" + fmt(c[k][1]);
+const full = c => c.room ? c.room + ": " + c.name : c.name;
+const svg = $("#house");
+const zoneComps = z => Object.values(comps).filter(c => c.zone === z);
+const who = c => c.trades.map(t => WHO[t]).join(", ");
+
+function setView(v){
+  view = v; svg.dataset.view = v;
+  $("#v-ext").setAttribute("aria-pressed", v==="ext");
+  $("#v-int").setAttribute("aria-pressed", v==="int");
+}
+function needView(v){ if (v !== "both" && v !== view) setView(v); }
+
+/* ---------- house ---------- */
+function paintHouse(){
+  const hint = new Set();
+  if (tour !== null) TOUR[tour].zones.forEach(z => hint.add(z));
+  else if (symptom) SYMPTOMS[symptom].parts.forEach(id => hint.add(comps[id].zone));
+  document.querySelectorAll(".part").forEach(g => {
+    const z = g.dataset.zone;
+    g.classList.toggle("focus", z === focusZone);
+    g.classList.toggle("hint", hint.has(z));
+    g.setAttribute("aria-label", ZONES[z].label + (hint.has(z) ? ", highlighted" : ""));
+  });
+}
+
+/* ---------- guide card: tour or symptom ---------- */
+function paintGuide(){
+  const el = $("#guide");
+  $("#tourBtn").textContent = tour === null ? "Take the house tour" : "End the tour";
+  $("#chips").innerHTML = Object.entries(SYMPTOMS).map(([k,s]) =>
+    '<button class="chip" type="button" data-sym="' + k + '" aria-pressed="' + (tour===null && symptom===k) + '">' + s.label + '</button>').join("");
+  if (tour !== null){
+    const t = TOUR[tour];
+    el.classList.add("tourcard");
+    el.innerHTML = '<div class="steps eyebrow">House tour · stop ' + (tour+1) + ' of ' + TOUR.length + '</div><h3>' + t.title + '</h3><p>' + t.text + '</p>' +
+      '<div class="nav"><button class="btn" id="tPrev" type="button"' + (tour===0?" disabled":"") + '>Back</button><button class="btn pri" id="tNext" type="button">' + (tour===TOUR.length-1 ? "Finish" : "Next stop") + '</button></div>';
+    return;
+  }
+  el.classList.remove("tourcard");
+  if (!symptom){ el.style.display = "none"; return; }
+  el.style.display = "";
+  const s = SYMPTOMS[symptom];
+  el.innerHTML = '<div class="eyebrow">What it usually means</div><h3>' + s.label + '</h3><p>' + s.text + '</p><div class="culprits"><span>Likely causes:</span>' +
+    s.parts.map(id => '<button class="chip" type="button" data-cul="' + id + '" aria-pressed="' + (expanded===id) + '">' + full(comps[id]) + '</button>').join("") + '</div>';
+}
+
+/* ---------- zone card ---------- */
+function itemBody(c){
+  const T = TIERS[c.t];
+  let h = '<div class="costs"><div class="costbox"><small>Repair</small><strong>' + rg(c,"repair") + '</strong></div>' +
+    '<div class="costbox"><small>Replace</small><strong>' + rg(c,"replace") + '</strong></div></div>';
+  if (c.does){
+    h += '<div><h4>What it does</h4><p>' + c.does + '</p></div><div><h4>What goes wrong</h4><p>' + c.fails + '</p></div><div><h4>Why fix it early</h4><p>' + c.early + '</p></div>' +
+      '<div><h4>What a repair looks like</h4><p>' + c.jobR + '</p></div><div><h4>What a replacement looks like</h4><p>' + c.jobP + '</p></div>';
+  } else {
+    h += '<div><h4>Why it matters</h4><p>' + c.why + '</p></div>';
+  }
+  if (c.warn) h += '<div><h4>Warning signs</h4><p>' + c.warn + '</p></div>';
+  h += '<div><span class="badge"><span class="dot" style="--c:' + T.color + '"></span>' + T.short + '</span><div class="who">Who you would call: ' + who(c) + '</div></div>';
+  return h;
+}
+function paintZone(){
+  const Z = ZONES[focusZone], list = zoneComps(focusZone);
+  let h = '<div class="eyebrow">' + (Z.view==="int" ? "Inside" : Z.view==="ext" ? "Outside" : "Inside and out") + '</div><h3>' + Z.label + '</h3><p>' + Z.blurb + '</p>';
+  if (Z.tip) h += '<div class="tipline">' + Z.tip.map(t => '<div><span>' + t[0] + '</span><b>~' + fmt(t[1][0]) + '–' + fmt(t[1][1]) + '</b></div>').join("") + '</div>';
+  h += '<div class="eyebrow" style="margin-top:14px">What to look at (' + list.length + ')</div><div class="acc">' + list.map(c => {
+    const open = expanded === c.id;
+    return '<div class="item' + (open?" open":"") + '"><button type="button" data-exp="' + c.id + '" aria-expanded="' + open + '"><span class="dot" style="--c:' + TIERS[c.t].color + '" title="' + TIERS[c.t].short + '"></span><span class="nm">' + c.name + '</span><span class="rg">' + rg(c,"repair") + '</span><span class="car">▶</span></button>' +
+      (open ? '<div class="body">' + itemBody(c) + '</div>' : '') + '</div>';
+  }).join("") + '</div>';
+  $("#zonecard").innerHTML = h;
+}
+
+function paint(){ paintGuide(); paintZone(); paintHouse(); }
+
+/* ---------- actions ---------- */
+function openZone(z, comp){
+  focusZone = z; const Z = ZONES[z]; needView(Z.view);
+  expanded = comp || Z.comp || null;
+  paint();
+}
+function openComp(id){ openZone(comps[id].zone, id); }
+function startTour(i){
+  tour = i; symptom = null; const t = TOUR[i];
+  needView(t.view === "both" ? view : t.view);
+  focusZone = t.zones[0]; expanded = ZONES[focusZone].comp || null;
+  paint();
+}
+
+/* ---------- tooltip ---------- */
+const tip = $("#tip"), stage = $("#stage");
+function showTip(z){
+  const Z = ZONES[z]; let h = '<b>' + Z.label + '</b>';
+  if (Z.tip){
+    h += '<div class="tr">' + Z.tip.map(t => '<span>' + t[0] + '</span><span></span><span>~' + fmt(t[1][0]) + '–' + fmt(t[1][1]) + '</span>').join("") + '</div>';
+  } else {
+    const list = zoneComps(z).slice(0,5);
+    h += '<div class="tr"><span class="th"></span><span class="th">Repair</span><span class="th">Replace</span>' +
+      list.map(c => '<span style="color:#fbf4e6;font-weight:400">' + c.name + '</span><span>' + rg(c,"repair") + '</span><span>' + rg(c,"replace") + '</span>').join("") + '</div>';
+  }
+  tip.innerHTML = h; tip.classList.add("on");
+}
+document.querySelectorAll(".part").forEach(g => {
+  const z = g.dataset.zone;
+  g.addEventListener("mouseenter", () => showTip(z));
+  g.addEventListener("mousemove", e => {
+    const b = stage.getBoundingClientRect();
+    const w = tip.offsetWidth || 220;
+    let x = e.clientX - b.left, y = e.clientY - b.top;
+    if (x + w + 30 > b.width) x = x - w - 28;
+    if (y + tip.offsetHeight + 30 > b.height) y = y - tip.offsetHeight - 28;
+    tip.style.left = Math.max(x,4) + "px"; tip.style.top = Math.max(y,4) + "px";
+  });
+  g.addEventListener("mouseleave", () => tip.classList.remove("on"));
+  g.addEventListener("click", () => openZone(z));
+  g.addEventListener("keydown", e => { if (e.key==="Enter"||e.key===" "){ e.preventDefault(); openZone(z); } });
+});
+
+/* ---------- events ---------- */
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-exp],[data-sym],[data-cul],#v-ext,#v-int,#tourBtn,#tPrev,#tNext");
+  if (!t) return;
+  if (t.dataset.exp){ expanded = expanded === t.dataset.exp ? null : t.dataset.exp; paint(); }
+  else if (t.dataset.sym){
+    tour = null;
+    symptom = symptom === t.dataset.sym ? null : t.dataset.sym;
+    if (symptom){
+      const ps = SYMPTOMS[symptom].parts, vis = id => { const v = ZONES[comps[id].zone].view; return v==="both" || v===view; };
+      openComp(ps.find(vis) || ps[0]);
+    } else paint();
+  }
+  else if (t.dataset.cul) openComp(t.dataset.cul);
+  else if (t.id === "v-ext"){ setView("ext"); paint(); }
+  else if (t.id === "v-int"){ setView("int"); paint(); }
+  else if (t.id === "tourBtn"){ if (tour === null) startTour(0); else { tour = null; paint(); } }
+  else if (t.id === "tPrev") startTour(tour-1);
+  else if (t.id === "tNext"){ if (tour === TOUR.length-1){ tour = null; paint(); } else startTour(tour+1); }
+});
+
+$("#people").innerHTML = PEOPLE.map(p => '<div class="person"><b>' + p[0] + '</b><span>' + p[1] + '</span></div>').join("");
+setView("ext");
+paint();
+
+</script>
+</body>
+</html>
